@@ -44,7 +44,8 @@ const places=[
  {name:'Berlin',country:'Deutschland',lat:52.52,lon:13.405},
  {name:'Grosseto',country:'Italien · Toskana',lat:42.7597,lon:11.1137},
  {name:'Schacht Konrad',country:'Salzgitter, Deutschland',lat:52.182563,lon:10.403366},
- {name:'Montecelli',country:'Monticelli bei Florenz, Toskana',lat:43.7680,lon:11.2540}
+ {name:'Montecelli',country:'Monticelli bei Florenz, Toskana',lat:43.7680,lon:11.2540},
+ {name:'Sète',country:'Südfrankreich · Okzitanien',lat:43.4037,lon:3.6928}
 ];
 let place=places[0], lastRefresh=0, requestId=0;
 function isRainCode(code){return [51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99].includes(code)}
@@ -84,7 +85,7 @@ async function loadWeather(p,skipMaps=false){place=p;const id=++requestId;$('cit
  }catch(e){if(id===requestId)$('status').textContent='Fehler: '+e.message+' · Bitte Internetverbindung prüfen.';}}
 const gkd='https://www.gkd.bayern.de/de/fluesse/wasserstand/kelheim/muenchen-himmelreichbruecke-16515005/messwerte';
 function setSpecial(index,html){const e=$('special-'+index);if(e)e.innerHTML=html}
-// Favoriten: echte aktuelle Modellwerte fuer exakt diese vier Standorte.
+// Favoriten: echte aktuelle Modellwerte fuer exakt diese fünf Standorte.
 async function loadSpecial(){
  await Promise.all(places.map(async (p,i)=>{
   setSpecial(i,'<small>Wetterdaten werden geladen …</small>');
