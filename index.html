@@ -38,7 +38,7 @@
 <main>
  <div class="titlebar"><div><h1 id="city">Berlin, Deutschland</h1><div class="muted small" id="status" role="status">Lade aktuelle Wetterdaten …</div></div><span class="tag">Wetter & Vorhersagen</span></div>
  <div class="grid">
-  <section class="card"><h2>🌤 Aktuelles Wetter</h2><div class="pad"><div class="current"><div class="icon" id="currentIcon">⛅</div><div><div class="big" id="currentTemp">—°</div><strong id="currentDesc">Wird geladen …</strong><div class="muted" id="feels">Gefühlt —°</div></div></div><div class="parts" id="dayParts"><div class="part">Vormittag</div><div class="part">Nachmittag</div><div class="part">Abend</div></div></div></section>
+  <section class="card"><h2>🌤 Aktuelle Wetterprognose</h2><div class="pad"><div class="current"><div class="icon" id="currentIcon">⛅</div><div><div class="big" id="currentTemp">—°</div><strong id="currentDesc">Wird geladen …</strong><div class="muted" id="feels">Gefühlt —°</div></div></div><div class="parts" id="dayParts"><div class="part">Vormittag</div><div class="part">Nachmittag</div><div class="part">Abend</div></div></div></section>
   <section class="card"><h2>🕒 Nächste 24 Stunden</h2><div class="hours" id="hourly"></div><div class="mapnote" style="padding:0 17px 16px">Stündliche Temperatur, Wetterlage und Regenwahrscheinlichkeit</div></section>
   <section class="card full" id="vierzehn-tage-verlauf"><h2>📈 14-Tage-Wetterverlauf · Temperatur, Sonne &amp; Wind</h2><div class="day-tip">👆 Tippe oder klicke auf einen Tag, um die detaillierte Tagesvorhersage zu öffnen.</div><div class="chart-scroll"><svg class="chart-svg" id="chart" viewBox="0 0 1370 515" role="group" aria-label="14 Tage. Jeder Tag ist anklickbar und zeigt Wetterdetails."></svg></div><div class="legend"><span><i style="background:#ef9c22"></i> Höchsttemperatur</span><span><i style="background:#318ed9"></i> Tiefsttemperatur</span><span>☀️ Sonnenstunden/Tag</span><span>💨 Windhose nach Wind / Böen: schlaff bis 10 / 18 kn · gespannt bis 20 / 30 kn · rot darüber</span><span>Windrichtung steht unter jeder Windhose</span></div><div class="mapnote" style="padding:0 20px 16px">Tagessymbole: Wetter um 14 Uhr; Hintergrund nach Wetterlage. Die Windhose berücksichtigt Wind und Böen: die höhere Stufe zählt. Schlaff bei Wind bis 10 kn UND Böen bis 18 kn; gespannt bei Wind über 10 bis 20 kn ODER Böen über 18 bis 30 kn, sofern nicht bereits Rot gilt; rot bei Wind über 20 kn ODER Böen über 30 kn. Die Himmelsrichtung darunter zeigt die vorherrschende Windrichtung. Wind und Sonne sind Modellwerte; die zweite Woche ist unsicherer.</div><div id="dayDetails" class="day-details" hidden aria-live="polite"></div></section>
   <section class="card full"><h2>🛰️ Satellitenwolken & Regenradar – Windy</h2>
@@ -51,7 +51,7 @@
   <section class="card"><h2>🌊 Wellenkarte</h2><iframe class="map" id="waves" loading="lazy" title="Meereswellenkarte"></iframe><div class="mapnote" style="padding:12px 18px">Wellenmodell · Mittelmeeransicht mit Zentrum bei Nizza – Italien und Spanien im Blick</div></section>
  </div>
 </main>
-<footer>Wetterprognosen: <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> · Satellit, Regenradar und Wellenkarte: <a href="https://www.windy.com" target="_blank" rel="noopener">Windy</a>. Vorhersagen und Favoritenwerte sind Modellwerte; sie können sich ändern.</footer>
+<footer>Wetterprognosen: <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> · Satellit, Regenradar und Wellenkarte: <a href="https://www.windy.com" target="_blank" rel="noopener">Windy</a>. Die angezeigten Bedingungen, Vorhersagen und Favoritenwerte sind Modellwerte, keine örtlichen Live-Messungen. Regenanzeige nur bei Niederschlags-Wettercode; Wettermodelle können von Beobachtungen abweichen.</footer>
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
@@ -67,12 +67,16 @@ function isRainCode(code){return [51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,9
 // Leicht: ein Tropfen, mittel: zwei, stark: drei. WMO-Code dient als
 // Fallback, wenn die gemeldete Niederschlagsmenge auf 0 gerundet ist.
 function rainCount(mm,code){
- const val=Number(mm);
- if(Number.isFinite(val)&&val>=0.05)return val>=1.2?3:val>=0.5?2:1;
+ // Die Niederschlagsmenge allein ist KEIN Beleg fuer Regen.
+ // Ein Regensymbol gibt es nur, wenn der Wettercode Niederschlag meldet.
+ // So erzeugt z.B. ein bewölkter Himmel mit 0,1 mm Modellniederschlag
+ // nicht faelschlich die Anzeige "Leichter Regen".
  if(!isRainCode(code))return 0;
- if([55,57,65,67,82,95,96,99].includes(code))return 3;
- if([53,63,81].includes(code))return 2;
- return 1;
+ const val=mm === null || mm === undefined ? NaN : Number(mm);
+ const codeLevel=[55,57,65,67,82,95,96,99].includes(code)?3:
+                 [53,63,81].includes(code)?2:1;
+ if(!Number.isFinite(val)||val<0.05)return codeLevel;
+ return Math.max(codeLevel,val>=1.2?3:val>=0.5?2:1);
 }
 function rainSymbol(n){return 'RAIN:'+Math.max(1,Math.min(3,n))}
 // Eigene SVG-Grafik statt Emoji: je nach Intensitaet EXAKT 1, 2 oder 3
@@ -272,7 +276,7 @@ $('chart').addEventListener('keydown',event=>{
 async function loadWeather(p,skipMaps=false){if(!skipMaps){selectedDayIndex=-1;activeForecastData=null;$('dayDetails').hidden=true;}place=p;const id=++requestId;$('city').textContent=p.name+(p.country?', '+p.country:'');$('status').textContent='Aktualisiere Wetterdaten …';if(!skipMaps)updateMaps();
  try{const u=new URL('https://api.open-meteo.com/v1/forecast');Object.entries({latitude:p.lat,longitude:p.lon,current:'temperature_2m,apparent_temperature,precipitation,weather_code,is_day',hourly:'temperature_2m,precipitation_probability,weather_code,is_day,precipitation,wind_speed_10m,wind_gusts_10m,wind_direction_10m',daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunshine_duration,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant',wind_speed_unit:'kn',timezone:'auto',forecast_days:14,_:Date.now()}).forEach(([k,v])=>u.searchParams.set(k,v));const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw Error('Wetterdienst nicht erreichbar ('+r.status+')');const d=await r.json();if(id!==requestId)return;const c=d.current;const [desc,icon]=detail(c.weather_code,Boolean(c.is_day),c.precipitation);$('currentIcon').innerHTML=iconHTML(icon);$('currentTemp').textContent=Math.round(c.temperature_2m)+'°';$('currentDesc').textContent=desc;$('feels').textContent='Gefühlt '+Math.round(c.apparent_temperature)+'°';
  const today=c.time.slice(0,10);$('dayParts').innerHTML=[['Vormittag','10:00'],['Nachmittag','15:00'],['Abend','20:00']].map(([label,time])=>{let i=d.hourly.time.indexOf(today+'T'+time);if(i<0)return`<div class="part"><strong>${label}</strong><span class="small muted">Keine Daten</span></div>`;const [des,ic]=detail(d.hourly.weather_code[i],Boolean(d.hourly.is_day[i]),d.hourly.precipitation?.[i]);return`<div class="part"><span class="small">${label}</span><span class="emoji">${iconHTML(ic)}</span><strong>${Math.round(d.hourly.temperature_2m[i])}°</strong><span class="small muted">${des}</span></div>`}).join('');
- let start=d.hourly.time.findIndex(t=>t>=c.time);start=Math.max(start,0);$('hourly').innerHTML=d.hourly.time.slice(start,start+24).map((t,j)=>{const i=start+j;const [_,ic]=detail(d.hourly.weather_code[i],Boolean(d.hourly.is_day[i]),d.hourly.precipitation?.[i]);return`<div class="hour"><div class="small muted">${j===0?'Jetzt':t.slice(11,16)}</div><div class="ico">${iconHTML(ic)}</div><strong>${Math.round(d.hourly.temperature_2m[i])}°</strong><div class="small muted">☂ ${d.hourly.precipitation_probability[i]??0}%</div></div>`}).join('');activeForecastData=d;renderChart(d);$('status').textContent='Wetterdaten frisch geladen · '+new Intl.DateTimeFormat('de-DE',{dateStyle:'short',timeStyle:'short'}).format(new Date());
+ let start=d.hourly.time.findIndex(t=>t>=c.time);start=Math.max(start,0);$('hourly').innerHTML=d.hourly.time.slice(start,start+24).map((t,j)=>{const i=start+j;const [_,ic]=detail(d.hourly.weather_code[i],Boolean(d.hourly.is_day[i]),d.hourly.precipitation?.[i]);return`<div class="hour"><div class="small muted">${j===0?'Jetzt':t.slice(11,16)}</div><div class="ico">${iconHTML(ic)}</div><strong>${Math.round(d.hourly.temperature_2m[i])}°</strong><div class="small muted">☂ ${d.hourly.precipitation_probability[i]??0}%</div></div>`}).join('');activeForecastData=d;renderChart(d);$('status').textContent='Open-Meteo-Modell aktualisiert · '+new Intl.DateTimeFormat('de-DE',{dateStyle:'short',timeStyle:'short'}).format(new Date());
  }catch(e){if(id===requestId)$('status').textContent='Fehler: '+e.message+' · Bitte Internetverbindung prüfen.';}}
 function setSpecial(index,html){const e=$('special-'+index);if(e)e.innerHTML=html}
 // Fünf MIMA-Favoriten mit aktuellen Modellwerten für die jeweilige Position.
